@@ -13,7 +13,7 @@ module RingCentralSdk
     class Subscription
       include Observable
 
-      RENEW_HANDICAP = 60
+      RENEW_HANDICAP = 60 * 14
 
       attr_reader :event_filters
 
@@ -86,6 +86,7 @@ module RingCentralSdk
           reset
           changed
           notify_observers(e)
+          puts "OMG WTF"
           raise 'Subscribe HTTP Request Error: ' + e.to_s
         end
       end
@@ -97,22 +98,29 @@ module RingCentralSdk
         raise 'Events are undefined' if @event_filters.empty?
         _clear_timeout
 
+        require 'pp'
+        puts "*" * 90
+        pp @_subscription['uri']
+        pp @_subscription
+        puts "*" * 90
         begin
+          puts "poopenhagen"
           response = @client.http.post do |req|
             req.url uri_join(@_subscription['uri'], 'renew')
             req.headers['Content-Type'] = 'application/json'
           end
-
+          puts "poopenhagen"
           set_subscription response.body
           changed
           notify_observers response
-
+          puts "poopenhagen"
           return response
         rescue StandardError => e
           @client.config.logger.warn "RingCentralSdk::REST::Subscription: RENEW_ERROR #{e}"
           reset
           changed
           notify_observers e
+          puts "GAH WHY"
           raise 'Renew HTTP Request Error'
         end
       end
@@ -132,6 +140,7 @@ module RingCentralSdk
           reset
           changed
           notify_observers e
+          puts "OK REALLY"
         end
       end
 
@@ -156,7 +165,13 @@ module RingCentralSdk
 
       def set_subscription(data)
         _clear_timeout
+
+        # I don't know why their API sends this back.
+        data['uri'].gsub!(/\:\-1/, '') if data
+        
         @_subscription = data
+        require 'pp'
+        pp @_subscription
         _set_timeout
       end
 
@@ -179,7 +194,7 @@ module RingCentralSdk
 
         callback = Pubnub::SubscribeCallback.new(
           message: ->(envelope) {
-            @client.config.logger.debug "MESSAGE: #{envelope.result[:data]}"
+            @client.config.logger.info "MESSAGE: #{envelope.result[:data]}"
             _notify envelope.result[:data][:message]
             changed
           },
@@ -201,12 +216,12 @@ module RingCentralSdk
         @_pubnub.subscribe(
           channels: @_subscription['deliveryMode']['address']
         )
-        @client.config.logger.debug('SUBSCRIBED')
+        @client.config.logger.info('SUBSCRIBED')
       end
 
       def _notify(message)
         count = count_observers
-        @client.config.logger.debug("RingCentralSdk::REST::Subscription NOTIFYING '#{count}' observers")
+        @client.config.logger.info("RingCentralSdk::REST::Subscription NOTIFYING '#{count}' observers")
 
         message = _decrypt message
         changed
