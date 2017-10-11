@@ -178,7 +178,7 @@ module RingCentralSdk
 
         s_key = @_subscription['deliveryMode']['subscriberKey']
 
-        @_pubnub = new_pubnub(s_key, false, '')
+        @_pubnub = new_pubnub(s_key, false, '', @client.config.logger)
 
         callback = Pubnub::SubscribeCallback.new(
           message: ->(envelope) {
@@ -278,7 +278,8 @@ module RingCentralSdk
       def new_pubnub(subscribe_key = '', ssl_on = false, publish_key = '', my_logger = nil)
         Pubnub.new(
           subscribe_key: subscribe_key.to_s,
-          publish_key: publish_key.to_s
+          publish_key: publish_key.to_s,
+          logger: my_logger
         )
       end
     end
