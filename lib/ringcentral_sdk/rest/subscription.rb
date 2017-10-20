@@ -157,7 +157,7 @@ module RingCentralSdk
       def set_subscription(data)
         _clear_timeout
         
-        data['uri'].gsub!(/\:\-1/, '') if data
+        data['uri'].gsub!(/\:\-1/, '') if data && data['uri']
 
         @_subscription = data
         _set_timeout
